@@ -7,10 +7,9 @@ def calculate_race_times(race_config, strategies):
     temp = race_config['track_temp'] - 25.0
     total_laps = race_config['total_laps']
     
-    # Exact physical constants derived via Gradient Descent optimization
-    off_S, off_M, off_H = -1.1799867, -0.2032529, 0.592793
-    deg_S, deg_M, deg_H = 1.4947913, 0.75324184, 0.3712976
-    t_S, t_M, t_H = 0.04588488, 0.02319887, 0.01481824
+    off_S, off_M, off_H = -1.3345068342286626, -0.3480072116681674, 0.4368717632845135
+    r_S, r_M, r_H = 1.46998001800897, 0.7518947887866986, 0.3819159775774934
+    t_S, t_M, t_H = 0.03907148270950899, 0.018870989625847285, 0.008642486696072316
     
     total_times = {}
     
@@ -23,22 +22,21 @@ def calculate_race_times(race_config, strategies):
         current_age = 1
         pit_idx = 0
         
-        # Start with pit penalty time
         time = pits * pit_time
         
         for lap in range(1, total_laps + 1):
             if current_tire == 'SOFT':
                 off = off_S
-                d = max(0, current_age - 10) # 10 lap cliff
-                deg = deg_S * d + t_S * d * temp
+                d = max(0, current_age - 10)
+                deg = r_S * d + t_S * d * temp
             elif current_tire == 'MEDIUM':
                 off = off_M
-                d = max(0, current_age - 20) # 20 lap cliff
-                deg = deg_M * d + t_M * d * temp
+                d = max(0, current_age - 20)
+                deg = r_M * d + t_M * d * temp
             else:
                 off = off_H
-                d = max(0, current_age - 30) # 30 lap cliff
-                deg = deg_H * d + t_H * d * temp
+                d = max(0, current_age - 30)
+                deg = r_H * d + t_H * d * temp
                 
             time += (base_lap_time + off + deg)
             
@@ -51,7 +49,6 @@ def calculate_race_times(race_config, strategies):
                 
         total_times[pos] = (time, driver_id)
         
-    # Stable sort handles identical strategy ties naturally by position integer
     def sort_key(item):
         pos_str, (time, d_id) = item
         pos_int = int(pos_str.replace('pos', ''))
@@ -64,6 +61,7 @@ def main():
     try:
         input_data = sys.stdin.read()
         if not input_data.strip():
+            print("{}")
             return
             
         race = json.loads(input_data)
@@ -76,11 +74,13 @@ def main():
             "finishing_positions": finishing_positions
         }
         
-        sys.stdout.write(json.dumps(output) + "\n")
+        sys.stdout.write(json.dumps(output))
         sys.stdout.flush()
         
     except Exception as e:
-        pass
+        import traceback
+        sys.stdout.write(json.dumps({"error": str(e), "traceback": traceback.format_exc()}))
+        sys.stdout.flush()
 
 if __name__ == '__main__':
     main()
